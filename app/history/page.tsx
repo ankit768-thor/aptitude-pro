@@ -2,9 +2,18 @@
 
 import { useState } from "react";
 import { getHistory, type HistoryEntry } from "@/lib/history";
+import { analyzeHistory } from "@/lib/historyAnalysis";
+import { SUBJECT_LABELS } from "@/lib/constants";
+
+const TREND_LABEL: Record<string, string> = {
+  improving: "📈 Improving",
+  declining: "📉 Declining",
+  steady: "➖ Steady",
+};
 
 export default function HistoryPage() {
   const [history] = useState<HistoryEntry[]>(() => getHistory());
+  const analysis = analyzeHistory(history);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -12,6 +21,46 @@ export default function HistoryPage() {
       <p className="mt-1 text-sm text-slate-500">
         Every completed test on this device, most recent first. Saved in your browser only.
       </p>
+
+      {analysis.testsTaken > 0 && (
+        <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+          <p className="text-sm font-medium text-slate-900">Your analysis</p>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="Tests taken" value={String(analysis.testsTaken)} />
+            <Stat label="Avg. score" value={`${analysis.avgScore}/100`} />
+            <Stat label="Avg. accuracy" value={`${analysis.avgAccuracy}%`} />
+            <Stat label="Trend" value={analysis.trend ? TREND_LABEL[analysis.trend] : "Not enough data yet"} />
+          </div>
+
+          {analysis.bySubject.length > 0 && (
+            <>
+              <p className="mt-5 text-xs font-medium uppercase tracking-wide text-slate-400">Accuracy by domain</p>
+              <div className="mt-2 flex flex-col gap-1.5">
+                {analysis.bySubject.map((s) => (
+                  <div key={s.subject} className="flex items-center gap-3 text-sm">
+                    <span className="w-40 shrink-0 text-slate-700">{SUBJECT_LABELS[s.subject]}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className={`h-full rounded-full ${s.accuracy >= 70 ? "bg-emerald-500" : s.accuracy >= 40 ? "bg-amber-500" : "bg-red-500"}`}
+                        style={{ width: `${s.accuracy}%` }}
+                      />
+                    </div>
+                    <span className="w-16 shrink-0 text-right text-slate-500">
+                      {s.accuracy}% ({s.correct}/{s.total})
+                    </span>
+                  </div>
+                ))}
+              </div>
+              {analysis.weakest && (
+                <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  Weakest area: <span className="font-medium">{SUBJECT_LABELS[analysis.weakest.subject]}</span> at{" "}
+                  {analysis.weakest.accuracy}% accuracy — worth a Quick Test or Numbered Test there next.
+                </p>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full text-sm">
@@ -46,6 +95,15 @@ export default function HistoryPage() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg bg-slate-50 px-3 py-2">
+      <p className="text-xs text-slate-400">{label}</p>
+      <p className="mt-0.5 text-sm font-medium text-slate-900">{value}</p>
     </div>
   );
 }

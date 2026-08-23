@@ -1,5 +1,7 @@
 "use client";
 
+import type { SectionPerformance } from "@/lib/algorithms/scoring";
+
 // No accounts — progress lives in the browser only, same as sql-mastery.
 
 export interface HistoryEntry {
@@ -8,6 +10,7 @@ export interface HistoryEntry {
   companyName: string | null;
   score: number;
   accuracy: number;
+  sectionPerformance: SectionPerformance[];
 }
 
 const KEY = "apro_history";

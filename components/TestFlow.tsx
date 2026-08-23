@@ -346,7 +346,14 @@ function RunningTest({
       };
     });
     const scored = scoreAttempt(scoredAnswers, test.negativeMarking, test.negativeMarkingValue ?? 0);
-    addHistoryEntry({ date: new Date().toISOString(), title: test.title, companyName, score: scored.score, accuracy: scored.accuracy });
+    addHistoryEntry({
+      date: new Date().toISOString(),
+      title: test.title,
+      companyName,
+      score: scored.score,
+      accuracy: scored.accuracy,
+      sectionPerformance: scored.sectionPerformance,
+    });
     setResult(scored);
   }
 
