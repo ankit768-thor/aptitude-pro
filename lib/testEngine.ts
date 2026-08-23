@@ -170,3 +170,39 @@ export async function assembleTest(
     questions,
   };
 }
+
+// Builds a test from an exact, pre-partitioned set of question IDs (see
+// lib/testBank.ts) — used by the mutually-exclusive numbered tests, as
+// opposed to assembleTest()'s random resampling.
+export async function assembleTestFromIds(questionIds: string[], title: string): Promise<AssembledTest> {
+  const { data, error } = await supabase
+    .from("questions")
+    .select("id, question_text, options, correct_option_key, explanation, shortcut, concept, exam_tip, difficulty, topics(name, subject)")
+    .in("id", questionIds);
+  if (error) throw error;
+
+  const byId = new Map(((data ?? []) as unknown as CandidateRow[]).map((q) => [q.id, q]));
+  const ordered = questionIds.map((id) => byId.get(id)).filter((q): q is CandidateRow => Boolean(q));
+
+  const questions: TestQuestion[] = ordered.map((q) => ({
+    id: q.id,
+    subject: q.topics.subject,
+    topicName: q.topics.name,
+    questionText: q.question_text,
+    options: q.options,
+    correctOptionKey: q.correct_option_key,
+    explanation: q.explanation,
+    shortcut: q.shortcut,
+    concept: q.concept,
+    examTip: q.exam_tip,
+    difficulty: q.difficulty,
+  }));
+
+  return {
+    title,
+    timeLimitMinutes: questionIds.length, // ~1 min/question, matching Quick/Sectional pacing
+    negativeMarking: false,
+    negativeMarkingValue: null,
+    questions,
+  };
+}

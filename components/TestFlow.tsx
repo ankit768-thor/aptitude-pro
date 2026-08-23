@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { assembleTest, type AssembledTest } from "@/lib/testEngine";
+import { assembleTest, assembleTestFromIds, type AssembledTest } from "@/lib/testEngine";
 import { getModeConfig, sectionTargets, type CompanySectionLike } from "@/lib/algorithms/testAssembly";
+import { getDomainTestBank, getFullTestBank } from "@/lib/testBank";
 import { scoreAttempt, type ScoredAnswer, type ScoreResult } from "@/lib/algorithms/scoring";
 import { addHistoryEntry } from "@/lib/history";
 import { SUBJECT_LABELS, MODE_LABELS, MODE_DESCRIPTIONS, type TimedMode } from "@/lib/constants";
@@ -41,6 +42,7 @@ export default function TestFlow({
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [test, setTest] = useState<AssembledTest | null>(null);
+  const [picker, setPicker] = useState<"custom" | "numbered">("custom");
 
   const company = companies.find((c) => c.id === companyId);
   const sections = company?.company_sections;
@@ -70,6 +72,29 @@ export default function TestFlow({
   if (!test) {
     return (
       <div className="mt-6 flex flex-col gap-5">
+        <div className="flex gap-2 text-sm">
+          <button
+            onClick={() => setPicker("custom")}
+            className={`rounded-lg px-3 py-1.5 ${picker === "custom" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}
+          >
+            Custom test
+          </button>
+          <button
+            onClick={() => setPicker("numbered")}
+            className={`rounded-lg px-3 py-1.5 ${picker === "numbered" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}
+          >
+            Numbered tests
+          </button>
+        </div>
+
+        {picker === "numbered" ? (
+          <NumberedTestPicker
+            onStart={setTest}
+            onError={setError}
+            error={error}
+          />
+        ) : (
+          <>
         <div className="grid grid-cols-2 gap-2">
           {MODES.map((m) => (
             <button
@@ -149,11 +174,112 @@ export default function TestFlow({
         >
           {starting ? "Starting…" : "Start test"}
         </button>
+          </>
+        )}
       </div>
     );
   }
 
   return <RunningTest test={test} companyName={company?.name ?? null} onRestart={() => setTest(null)} />;
+}
+
+const BANK_OPTIONS: { key: Subject | "full"; label: string }[] = [
+  { key: "full", label: "Full Test (all domains)" },
+  ...(Object.keys(SUBJECT_LABELS) as Subject[]).map((s) => ({ key: s, label: SUBJECT_LABELS[s] })),
+];
+
+function NumberedTestPicker({
+  onStart,
+  onError,
+  error,
+}: {
+  onStart: (test: AssembledTest) => void;
+  onError: (msg: string | null) => void;
+  error: string | null;
+}) {
+  const [bankKey, setBankKey] = useState<Subject | "full">("full");
+  const [bank, setBank] = useState<string[][] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [starting, setStarting] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const timeout = setTimeout(() => {
+      if (cancelled) return;
+      setBank(null);
+      setLoading(true);
+      onError(null);
+      const fetchBank = bankKey === "full" ? getFullTestBank() : getDomainTestBank(bankKey);
+      fetchBank
+        .then((chunks) => {
+          if (!cancelled) setBank(chunks);
+        })
+        .catch((e) => !cancelled && onError(e instanceof Error ? e.message : "Could not load tests"))
+        .finally(() => !cancelled && setLoading(false));
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bankKey]);
+
+  async function start(chunkIndex: number) {
+    if (!bank) return;
+    setStarting(chunkIndex);
+    onError(null);
+    try {
+      const title = `${bankKey === "full" ? "Full" : SUBJECT_LABELS[bankKey]} Test ${chunkIndex + 1}`;
+      const assembled = await assembleTestFromIds(bank[chunkIndex], title);
+      onStart(assembled);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : "Could not start the test");
+    } finally {
+      setStarting(null);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1 text-sm text-slate-600">
+        Domain
+        <select
+          value={bankKey}
+          onChange={(e) => setBankKey(e.target.value as Subject | "full")}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+        >
+          {BANK_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {loading && <p className="text-sm text-slate-500">Loading…</p>}
+      {!loading && bank && bank.length === 0 && (
+        <p className="text-sm text-slate-500">No mutually-exclusive test can be built yet for this domain — not enough questions seeded.</p>
+      )}
+      {!loading && bank && bank.length > 0 && (
+        <>
+          <p className="text-xs text-slate-500">{bank.length} mutually-exclusive tests available — each question appears in exactly one.</p>
+          <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+            {bank.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => start(i)}
+                disabled={starting !== null}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+              >
+                {starting === i ? "…" : `#${i + 1}`}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+    </div>
+  );
 }
 
 function PreviewStat({ label, value }: { label: string; value: string }) {
