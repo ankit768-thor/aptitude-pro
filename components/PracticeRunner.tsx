@@ -58,20 +58,31 @@ export default function PracticeRunner({
   const [bookmarked, setBookmarked] = useState<BookmarkCategory[]>([]);
   const autoStartedRef = useRef(false);
   const [noFixedQuestions, setNoFixedQuestions] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  async function startFixed(ids: string[]) {
+    setLoading(true);
+    setStartError(null);
+    try {
+      const result = await startPracticeSession({ questionIds: ids });
+      if (!result.attemptId) {
+        setNoFixedQuestions(true);
+        return;
+      }
+      setAttemptId(result.attemptId);
+      setQuestions(result.questions);
+      setQuestionStartedAt(Date.now());
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : "Couldn't load your mistakes. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (fixedQuestionIds?.length && !autoStartedRef.current) {
       autoStartedRef.current = true;
-      startPracticeSession({ questionIds: fixedQuestionIds }).then((result) => {
-        setLoading(false);
-        if (!result.attemptId) {
-          setNoFixedQuestions(true);
-          return;
-        }
-        setAttemptId(result.attemptId);
-        setQuestions(result.questions);
-        setQuestionStartedAt(Date.now());
-      });
+      startFixed(fixedQuestionIds);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -84,20 +95,26 @@ export default function PracticeRunner({
 
   async function handleStart() {
     setLoading(true);
-    const result = await startPracticeSession({
-      subject: subject || undefined,
-      difficulty: (difficulty as Difficulty) || undefined,
-      companyId: companyId || undefined,
-    });
-    setLoading(false);
-    setAttemptId(result.attemptId);
-    setQuestions(result.questions);
-    setIndex(0);
-    setSelected(null);
-    setRevealed(false);
-    setCorrectCount(0);
-    setFinished(false);
-    setQuestionStartedAt(Date.now());
+    setStartError(null);
+    try {
+      const result = await startPracticeSession({
+        subject: subject || undefined,
+        difficulty: (difficulty as Difficulty) || undefined,
+        companyId: companyId || undefined,
+      });
+      setAttemptId(result.attemptId);
+      setQuestions(result.questions);
+      setIndex(0);
+      setSelected(null);
+      setRevealed(false);
+      setCorrectCount(0);
+      setFinished(false);
+      setQuestionStartedAt(Date.now());
+    } catch (e) {
+      setStartError(e instanceof Error ? e.message : "Couldn't start practice. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleCheck() {
@@ -158,6 +175,16 @@ export default function PracticeRunner({
     if (noFixedQuestions) {
       return <p className="mt-6 text-sm text-slate-500">No matching questions to practice right now.</p>;
     }
+    if (startError) {
+      return (
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
+          {startError}{" "}
+          <button onClick={() => startFixed(fixedQuestionIds)} className="font-medium underline">
+            Retry
+          </button>
+        </div>
+      );
+    }
     return <p className="mt-6 text-sm text-slate-500">Loading your mistakes…</p>;
   }
 
@@ -182,6 +209,7 @@ export default function PracticeRunner({
           onChange={setCompanyId}
           options={[{ value: "", label: "Any company" }, ...companies.map((c) => ({ value: c.id, label: c.name }))]}
         />
+        {startError && <p className="text-sm text-red-600">{startError}</p>}
         <button
           onClick={handleStart}
           disabled={loading}
