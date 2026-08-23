@@ -1,8 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
+import { supabase } from "@/lib/supabase/client";
 import CompanyGrid from "@/components/CompanyGrid";
 
 export default async function CompaniesPage() {
-  const supabase = await createClient();
   const { data: companies } = await supabase
     .from("companies")
     .select("id, name, slug, category, difficulty, assessment_type")

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { supabase } from "@/lib/supabase/client";
 import { SUBJECT_LABELS } from "@/lib/constants";
 
 export default async function CompanyDetailPage({
@@ -9,7 +9,6 @@ export default async function CompanyDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const supabase = await createClient();
 
   const { data: company } = await supabase
     .from("companies")

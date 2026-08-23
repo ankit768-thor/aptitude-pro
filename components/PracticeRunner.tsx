@@ -1,12 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  startPracticeSession,
-  submitPracticeAnswer,
-  finishPracticeSession,
-  type PracticeQuestion,
-} from "@/lib/actions/practice";
+import { fetchPracticeQuestions, type PracticeQuestion } from "@/lib/practiceEngine";
 import type { Difficulty } from "@/lib/types/database";
 
 interface Props {
@@ -29,13 +24,12 @@ export default function PracticeRunner({ subjects, companies, initialCompanyId, 
   const [companyId, setCompanyId] = useState<string>(initialCompanyId ?? "");
 
   const [loading, setLoading] = useState(false);
-  const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [started, setStarted] = useState(false);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
-  const [questionStartedAt, setQuestionStartedAt] = useState<number>(0);
   const [finished, setFinished] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
 
@@ -43,19 +37,18 @@ export default function PracticeRunner({ subjects, companies, initialCompanyId, 
     setLoading(true);
     setStartError(null);
     try {
-      const result = await startPracticeSession({
+      const result = await fetchPracticeQuestions({
         subject: subject || undefined,
         difficulty: (difficulty as Difficulty) || undefined,
         companyId: companyId || undefined,
       });
-      setAttemptId(result.attemptId);
-      setQuestions(result.questions);
+      setStarted(true);
+      setQuestions(result);
       setIndex(0);
       setSelected(null);
       setRevealed(false);
       setCorrectCount(0);
       setFinished(false);
-      setQuestionStartedAt(Date.now());
     } catch (e) {
       setStartError(e instanceof Error ? e.message : "Couldn't start practice. Please try again.");
     } finally {
@@ -63,32 +56,20 @@ export default function PracticeRunner({ subjects, companies, initialCompanyId, 
     }
   }
 
-  async function handleCheck() {
-    if (!selected || !attemptId) return;
+  function handleCheck() {
+    if (!selected) return;
     const q = questions[index];
     const isCorrect = selected === q.correct_option_key;
     setRevealed(true);
     if (isCorrect) setCorrectCount((c) => c + 1);
-
-    const timeSpent = Math.max(1, Math.round((Date.now() - questionStartedAt) / 1000));
-    await submitPracticeAnswer({
-      attemptId,
-      questionId: q.id,
-      topicId: q.topic_id,
-      selectedKey: selected,
-      isCorrect,
-      timeSpentSeconds: timeSpent,
-    });
   }
 
-  async function handleNext() {
+  function handleNext() {
     if (index + 1 < questions.length) {
       setIndex((i) => i + 1);
       setSelected(null);
       setRevealed(false);
-      setQuestionStartedAt(Date.now());
-    } else if (attemptId) {
-      await finishPracticeSession(attemptId);
+    } else {
       setFinished(true);
     }
   }
@@ -105,7 +86,7 @@ export default function PracticeRunner({ subjects, companies, initialCompanyId, 
         </p>
         <button
           onClick={() => {
-            setAttemptId(null);
+            setStarted(false);
             setQuestions([]);
           }}
           className="mt-4 rounded-lg bg-slate-900 px-5 py-2 text-sm font-medium text-white hover:bg-slate-800"
@@ -116,7 +97,7 @@ export default function PracticeRunner({ subjects, companies, initialCompanyId, 
     );
   }
 
-  if (!attemptId) {
+  if (!started) {
     return (
       <div className="mt-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5">
         <Select label="Topic" value={subject} onChange={setSubject} options={[{ value: "", label: "All topics" }, ...subjects]} />
@@ -153,7 +134,7 @@ export default function PracticeRunner({ subjects, companies, initialCompanyId, 
     return (
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-500">
         No questions match those filters yet.{" "}
-        <button onClick={() => setAttemptId(null)} className="text-slate-900 underline">
+        <button onClick={() => setStarted(false)} className="text-slate-900 underline">
           Try different filters
         </button>
       </div>

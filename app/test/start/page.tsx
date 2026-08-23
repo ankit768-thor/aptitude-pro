@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
-import TestStartForm, { type CompanyWithSections } from "@/components/TestStartForm";
+import { supabase } from "@/lib/supabase/client";
+import TestFlow, { type CompanyWithSections } from "@/components/TestFlow";
 
 export default async function TestStartPage({
   searchParams,
@@ -7,7 +7,6 @@ export default async function TestStartPage({
   searchParams: Promise<{ company?: string; mode?: string }>;
 }) {
   const { company: companySlug, mode } = await searchParams;
-  const supabase = await createClient();
 
   const { data: companiesRaw } = await supabase
     .from("companies")
@@ -17,7 +16,6 @@ export default async function TestStartPage({
   // Relation embedding (company_sections(...)) isn't represented in our
   // hand-written Database type's Relationships metadata, so cast once here.
   const companies = (companiesRaw ?? []) as unknown as CompanyWithSections[];
-
   const initialCompanyId = companySlug ? companies.find((c) => c.slug === companySlug)?.id : undefined;
 
   return (
@@ -26,7 +24,7 @@ export default async function TestStartPage({
       <p className="mt-1 text-sm text-slate-500">
         Pick a mode and, optionally, a target company to match its assessment pattern.
       </p>
-      <TestStartForm companies={companies} initialCompanyId={initialCompanyId} initialMode={mode} />
+      <TestFlow companies={companies} initialCompanyId={initialCompanyId} initialMode={mode} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { supabase } from "@/lib/supabase/client";
 import PracticeRunner from "@/components/PracticeRunner";
 import { SUBJECT_LABELS } from "@/lib/constants";
 import type { Subject } from "@/lib/types/database";
@@ -11,7 +11,6 @@ export default async function PracticePage({
   searchParams: Promise<{ company?: string; subject?: string; difficulty?: string }>;
 }) {
   const { company: companySlug, subject, difficulty } = await searchParams;
-  const supabase = await createClient();
 
   const { data: companies } = await supabase.from("companies").select("id, name, slug").order("name");
 

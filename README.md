@@ -6,8 +6,11 @@ topics, and take timed tests (full-length or per-domain) with a per-test result 
 
 This is NOT an MBA-entrance-exam (CAT/GMAT) prep tool.
 
-Built with Next.js (App Router, TypeScript), Tailwind CSS, and Supabase (Postgres + Auth).
-Live at [aptitude-pro-cyan.vercel.app](https://aptitude-pro-cyan.vercel.app).
+No accounts, no sign-in — same as this user's other local projects (sql-mastery, pm-mastery).
+Open it and start practicing; progress/history is saved in your browser only.
+
+Built with Next.js (App Router, TypeScript), Tailwind CSS, and Supabase (Postgres, public
+read-only content — no auth in the app).
 
 ## Setup
 
@@ -22,10 +25,7 @@ export PATH="$PWD/.node-runtime/bin:$PATH"
 
 1. Go to [supabase.com](https://supabase.com) and create a new project.
 2. In **Project Settings → API**, copy the **Project URL**, **anon public key**, and
-   **service_role key**.
-3. In **Authentication → Providers**, confirm **Email** is enabled.
-4. (Optional) Enable **Google** and set up an OAuth client in the
-   [Google Cloud Console](https://console.cloud.google.com) if you want Google sign-in.
+   **service_role key** (the service role key is only used server-side by the seed scripts).
 
 ### 2. Configure this project
 
@@ -33,13 +33,15 @@ export PATH="$PWD/.node-runtime/bin:$PATH"
 cp .env.local.example .env.local
 ```
 
-Fill in the three values from step 1: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY` (the last one is server-only — never exposed to the browser).
+Fill in the three values from step 1.
 
 ### 3. Run the database migration
 
 Paste the contents of `supabase/migrations/0001_init.sql` into the Supabase SQL Editor and run it
-(or use the Supabase CLI: `supabase login`, `supabase link`, `supabase db push`).
+(or use the Supabase CLI: `supabase login`, `supabase link`, `supabase db push`). Only the content
+tables (`companies`, `company_sections`, `topics`, `questions`, `question_sources`) are actually
+used by the app — the rest of the schema (profiles/attempts/bookmarks/etc.) is leftover from an
+earlier accounts-based version and is unused.
 
 ### 4. Seed content
 
@@ -59,7 +61,16 @@ so reseeding never duplicates rows.
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000), sign up, complete onboarding, and start a test.
+Open [http://localhost:3000](http://localhost:3000) and start a test — no sign-up needed.
+
+### 6. Share it (optional)
+
+```bash
+./share.command
+```
+
+Starts the server and opens a temporary public link via a Cloudflare tunnel, same as the other
+local projects. Ctrl+C to stop; nothing stays hosted.
 
 ## Source verification
 
@@ -73,14 +84,16 @@ based on public information, clearly marked as "Company-style practice" in the U
 | Path | Purpose |
 | --- | --- |
 | `app/` | Next.js App Router pages |
-| `lib/supabase/` | Browser / server / service-role Supabase clients |
-| `lib/actions/` | Server actions (onboarding, practice, timed tests, practice history) |
-| `lib/algorithms/` | Pure functions: test assembly (mode config, difficulty mix, domain/company section sampling) and scoring |
+| `lib/supabase/client.ts` | Single anon-key Supabase client (no auth, no cookies) |
+| `lib/testEngine.ts` | Client-side test assembly (mode/domain/company sampling) |
+| `lib/practiceEngine.ts` | Client-side practice question fetching |
+| `lib/history.ts` | localStorage-based test history (no backend) |
+| `lib/algorithms/` | Pure functions: test assembly (mode config, difficulty mix, section sampling) and scoring |
 | `lib/types/database.ts` | Hand-written types matching the SQL schema |
-| `proxy.ts` | Session-refresh middleware (renamed from `middleware.ts` in Next.js 16) |
-| `supabase/migrations/0001_init.sql` | Full schema + RLS policies |
+| `supabase/migrations/0001_init.sql` | Full schema + RLS policies (only the content tables are actually used) |
 | `scripts/seed/` | Content seed scripts (topics, companies, questions), run via `npm run seed` |
 | `.node-runtime/` | Portable Node.js (gitignored) — this machine has no system Node |
+| `share.command` / `cloudflared` | Local sharing tunnel (gitignored) |
 
 ## How it works
 
@@ -92,15 +105,14 @@ based on public information, clearly marked as "Company-style practice" in the U
   Quick/Sectional/Company Mock can also be scoped to a single **domain** (e.g. "Quantitative
   Aptitude Test") instead of spanning all 6 subjects — pick a domain and no company. Each attempt
   reshuffles and resamples from the question pool, so a domain/mode combo can be retaken
-  indefinitely without repeating the same set. The result page (`/test/[attemptId]/result`) shows
-  score, accuracy, correct/incorrect/skipped, and a per-section breakdown.
-- **History** (`/history`) — every completed session with score/accuracy/time.
+  indefinitely without repeating the same set. Runs entirely client-side (timer, palette,
+  scoring) and shows score, accuracy, correct/incorrect/skipped, and a per-section breakdown.
+- **History** (`/history`) — every completed test on this device, saved in localStorage.
 
 ## Status
 
-Phase A (auth/onboarding/companies/practice), Phase B (145-question content bank across 6
-subjects), and Phase C (timed test engine: 4 modes + domain scoping) are done and live. A
-readiness-score/weak-area/recommendations/bookmarks/mistakes/analytics layer was built and then
-deliberately removed in favor of this simpler, sql-mastery-style shape: a large reusable test bank
-with a small per-test result, no coaching layer. AI Tutor, a study-plan/exam-countdown feature,
-gamification, global search, and Google sign-in are out of scope / disabled for now.
+Content bank (145 questions across 6 subjects, 8 companies) and the test engine (4 modes + domain
+scoping) are done and live, running fully client-side with no accounts. An earlier
+accounts+auth+readiness-score+weak-area+recommendations+bookmarks+mistakes+analytics layer was
+built and then deliberately removed — too much for what was asked. AI Tutor, a study-plan/
+exam-countdown feature, gamification, and global search are out of scope for now.
