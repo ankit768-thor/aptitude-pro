@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getCompanyReadinessForUser } from "@/lib/actions/readiness";
 import { SUBJECT_LABELS } from "@/lib/constants";
 
 export default async function CompanyDetailPage({
@@ -25,8 +24,6 @@ export default async function CompanyDetailPage({
     .select("*")
     .eq("company_id", company.id)
     .order("weight_pct", { ascending: false });
-
-  const readiness = await getCompanyReadinessForUser(company.id);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
@@ -73,36 +70,6 @@ export default async function CompanyDetailPage({
           <p className="text-sm text-slate-400">No sections seeded for this company yet.</p>
         )}
       </div>
-
-      {readiness && (
-        <>
-          <h2 className="mt-8 text-lg font-semibold text-slate-900">Your Readiness</h2>
-          <div className="mt-3 rounded-xl border border-slate-200 bg-white p-5">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-slate-500">Overall</p>
-              <p className="text-2xl font-semibold text-slate-900">{readiness.overallPct}%</p>
-            </div>
-            <div className="mt-3 flex flex-col gap-1.5">
-              {readiness.sections.map((s) => (
-                <div key={s.subject} className="flex justify-between text-sm text-slate-700">
-                  <span>{SUBJECT_LABELS[s.subject]}</span>
-                  <span className="text-slate-500">{s.accuracyPct}%</span>
-                </div>
-              ))}
-            </div>
-            {readiness.checklist.length > 0 && (
-              <div className="mt-4 border-t border-slate-100 pt-4">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Recommended before test</p>
-                <ul className="mt-2 flex flex-col gap-1 text-sm text-slate-700">
-                  {readiness.checklist.map((item, i) => (
-                    <li key={i}>• {item}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        </>
-      )}
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link

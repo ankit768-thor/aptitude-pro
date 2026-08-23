@@ -9,9 +9,6 @@ export interface PracticeFilters {
   companyId?: string;
   difficulty?: Difficulty;
   count?: number;
-  // When set, the question pool is exactly these IDs (in order) instead of
-  // a filtered query — used by "Practice My Mistakes".
-  questionIds?: string[];
 }
 
 export interface PracticeQuestion {
@@ -45,14 +42,10 @@ export async function startPracticeSession(filters: PracticeFilters) {
     .from("questions")
     .select("id, question_text, options, correct_option_key, explanation, shortcut, concept, exam_tip, difficulty, topic_id, topics(name, subject)");
 
-  if (filters.questionIds) {
-    query = query.in("id", filters.questionIds);
-  } else {
-    if (filters.companyId) query = query.eq("company_id", filters.companyId);
-    if (filters.difficulty) query = query.eq("difficulty", filters.difficulty);
-  }
+  if (filters.companyId) query = query.eq("company_id", filters.companyId);
+  if (filters.difficulty) query = query.eq("difficulty", filters.difficulty);
 
-  const { data: candidates, error } = await query.limit(filters.questionIds ? filters.questionIds.length : 200);
+  const { data: candidates, error } = await query.limit(200);
   if (error) throw error;
 
   // Relation embedding (topics(name, subject)) isn't represented in our
@@ -62,8 +55,8 @@ export async function startPracticeSession(filters: PracticeFilters) {
     topics: { name: string; subject: string };
   })[];
 
-  const pool = filters.questionIds ? rows : rows.filter((q) => (filters.subject ? q.topics?.subject === filters.subject : true));
-  const shuffled = filters.questionIds ? pool : pool.sort(() => Math.random() - 0.5).slice(0, count);
+  const pool = rows.filter((q) => (filters.subject ? q.topics?.subject === filters.subject : true));
+  const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, count);
 
   if (shuffled.length === 0) {
     return { attemptId: null, questions: [] as PracticeQuestion[] };

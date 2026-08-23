@@ -10,6 +10,7 @@ import {
   type CompanySectionLike,
 } from "@/lib/algorithms/testAssembly";
 import { scoreAttempt, type ScoredAnswer } from "@/lib/algorithms/scoring";
+import { SUBJECT_LABELS } from "@/lib/constants";
 import type { Difficulty, QuestionOption, Subject, TestMode } from "@/lib/types/database";
 
 interface CandidateQuestion {
@@ -77,6 +78,7 @@ async function pickQuestionsForSubject(
 export interface StartTestInput {
   mode: TestMode;
   companyId?: string;
+  subject?: Subject;
 }
 
 export async function startTest(input: StartTestInput) {
@@ -114,7 +116,7 @@ export async function startTest(input: StartTestInput) {
 
   const modeConfig = getModeConfig(input.mode, sections);
   const mix = difficultyMix(companyDifficulty);
-  const targets = sectionTargets(input.mode, modeConfig.questionCount, sections);
+  const targets = sectionTargets(input.mode, modeConfig.questionCount, sections, input.subject);
 
   const picks = await Promise.all(
     targets.map((t) => pickQuestionsForSubject(supabase, t.subject, input.companyId, t.targetCount, mix)),
@@ -125,15 +127,18 @@ export async function startTest(input: StartTestInput) {
     throw new Error("No questions are available for this test configuration yet.");
   }
 
+  const subjectLabel = input.subject ? SUBJECT_LABELS[input.subject] : "";
   const title =
     input.mode === "quick"
-      ? "Quick Test"
+      ? subjectLabel ? `${subjectLabel} Quick Test` : "Quick Test"
       : input.mode === "sectional"
-        ? "Sectional Test"
+        ? subjectLabel ? `${subjectLabel} Test` : "Sectional Test"
         : input.mode === "company_mock"
           ? companyName
             ? `${companyName} Mock`
-            : "Company Mock"
+            : subjectLabel
+              ? `${subjectLabel} Full Test`
+              : "Full Test"
           : `${companyName} Full Assessment`;
 
   const { data: test, error: testError } = await supabase

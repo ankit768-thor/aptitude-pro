@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { startTest } from "@/lib/actions/test";
 import { getModeConfig, difficultyMix, sectionTargets, type CompanySectionLike } from "@/lib/algorithms/testAssembly";
 import { SUBJECT_LABELS, MODE_LABELS, MODE_DESCRIPTIONS, type TimedMode } from "@/lib/constants";
-import type { Difficulty } from "@/lib/types/database";
+import type { Difficulty, Subject } from "@/lib/types/database";
 
 export interface CompanyWithSections {
   id: string;
@@ -31,18 +31,20 @@ export default function TestStartForm({
     initialMode && MODES.includes(initialMode as TimedMode) ? (initialMode as TimedMode) : "quick",
   );
   const [companyId, setCompanyId] = useState<string>(initialCompanyId ?? "");
+  const [subject, setSubject] = useState<Subject | "">("");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const company = companies.find((c) => c.id === companyId);
   const sections = company?.company_sections;
+  const domainPickerEnabled = mode !== "full_assessment" && !companyId;
 
   const preview = useMemo(() => {
     const config = getModeConfig(mode, sections);
     const mix = difficultyMix(company?.difficulty);
-    const targets = sectionTargets(mode, config.questionCount, sections);
+    const targets = sectionTargets(mode, config.questionCount, sections, domainPickerEnabled && subject ? subject : undefined);
     return { config, targets, mix };
-  }, [mode, sections, company?.difficulty]);
+  }, [mode, sections, company?.difficulty, domainPickerEnabled, subject]);
 
   const canStart = mode !== "full_assessment" || Boolean(companyId);
 
@@ -50,7 +52,11 @@ export default function TestStartForm({
     setError(null);
     setStarting(true);
     try {
-      const { attemptId } = await startTest({ mode, companyId: companyId || undefined });
+      const { attemptId } = await startTest({
+        mode,
+        companyId: companyId || undefined,
+        subject: domainPickerEnabled && subject ? subject : undefined,
+      });
       router.push(`/test/${attemptId}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the test");
@@ -90,6 +96,24 @@ export default function TestStartForm({
           ))}
         </select>
       </label>
+
+      {domainPickerEnabled && (
+        <label className="flex flex-col gap-1 text-sm text-slate-600">
+          Domain
+          <select
+            value={subject}
+            onChange={(e) => setSubject(e.target.value as Subject | "")}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
+          >
+            <option value="">All domains</option>
+            {(Object.keys(SUBJECT_LABELS) as Subject[]).map((s) => (
+              <option key={s} value={s}>
+                {SUBJECT_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <p className="text-sm font-medium text-slate-900">Before you start</p>

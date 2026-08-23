@@ -82,9 +82,14 @@ export function sectionTargets(
   mode: TestMode,
   questionCount: number,
   sections?: CompanySectionLike[],
+  subject?: Subject,
 ): SectionTarget[] {
   if (mode === "full_assessment" && sections && sections.length > 0) {
     return sections.map((s) => ({ subject: s.topic_subject, targetCount: s.typical_question_count }));
+  }
+
+  if (subject) {
+    return [{ subject, targetCount: questionCount }];
   }
 
   if (sections && sections.length > 0) {

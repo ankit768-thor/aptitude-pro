@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
-import MoreMenu from "@/components/MoreMenu";
 
 export default async function NavBar() {
   const supabase = await createClient();
@@ -21,7 +20,8 @@ export default async function NavBar() {
               <Link href="/dashboard" className="hover:text-slate-900">Dashboard</Link>
               <Link href="/companies" className="hover:text-slate-900">Companies</Link>
               <Link href="/practice" className="hover:text-slate-900">Practice</Link>
-              <MoreMenu />
+              <Link href="/test/start" className="hover:text-slate-900">Test</Link>
+              <Link href="/history" className="hover:text-slate-900">History</Link>
               <SignOutButton />
             </>
           ) : (

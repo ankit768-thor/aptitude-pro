@@ -1,21 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   startPracticeSession,
   submitPracticeAnswer,
   finishPracticeSession,
   type PracticeQuestion,
 } from "@/lib/actions/practice";
-import { toggleBookmark } from "@/lib/actions/bookmarks";
-import type { BookmarkCategory, Difficulty } from "@/lib/types/database";
-
-const BOOKMARK_CATEGORIES: { value: BookmarkCategory; label: string }[] = [
-  { value: "wrong", label: "Wrong" },
-  { value: "important", label: "Important" },
-  { value: "difficult", label: "Difficult" },
-  { value: "interview", label: "Interview" },
-];
+import type { Difficulty } from "@/lib/types/database";
 
 interface Props {
   subjects: { value: string; label: string }[];
@@ -23,21 +15,11 @@ interface Props {
   initialCompanyId?: string;
   initialSubject?: string;
   initialDifficulty?: string;
-  // When set (e.g. from "Practice My Mistakes"), skips the filter form and
-  // starts a session sourced from exactly these question IDs.
-  fixedQuestionIds?: string[];
 }
 
 const VALID_DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard"];
 
-export default function PracticeRunner({
-  subjects,
-  companies,
-  initialCompanyId,
-  initialSubject,
-  initialDifficulty,
-  fixedQuestionIds,
-}: Props) {
+export default function PracticeRunner({ subjects, companies, initialCompanyId, initialSubject, initialDifficulty }: Props) {
   const [subject, setSubject] = useState<string>(
     initialSubject && subjects.some((s) => s.value === initialSubject) ? initialSubject : "",
   );
@@ -46,7 +28,7 @@ export default function PracticeRunner({
   );
   const [companyId, setCompanyId] = useState<string>(initialCompanyId ?? "");
 
-  const [loading, setLoading] = useState(Boolean(fixedQuestionIds?.length));
+  const [loading, setLoading] = useState(false);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<PracticeQuestion[]>([]);
   const [index, setIndex] = useState(0);
@@ -55,43 +37,7 @@ export default function PracticeRunner({
   const [correctCount, setCorrectCount] = useState(0);
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(0);
   const [finished, setFinished] = useState(false);
-  const [bookmarked, setBookmarked] = useState<BookmarkCategory[]>([]);
-  const autoStartedRef = useRef(false);
-  const [noFixedQuestions, setNoFixedQuestions] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-
-  async function startFixed(ids: string[]) {
-    setLoading(true);
-    setStartError(null);
-    try {
-      const result = await startPracticeSession({ questionIds: ids });
-      if (!result.attemptId) {
-        setNoFixedQuestions(true);
-        return;
-      }
-      setAttemptId(result.attemptId);
-      setQuestions(result.questions);
-      setQuestionStartedAt(Date.now());
-    } catch (e) {
-      setStartError(e instanceof Error ? e.message : "Couldn't load your mistakes. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (fixedQuestionIds?.length && !autoStartedRef.current) {
-      autoStartedRef.current = true;
-      startFixed(fixedQuestionIds);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function handleToggleBookmark(category: BookmarkCategory) {
-    const q = questions[index];
-    setBookmarked((prev) => (prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category]));
-    await toggleBookmark(q.id, category).catch(() => {});
-  }
 
   async function handleStart() {
     setLoading(true);
@@ -140,7 +86,6 @@ export default function PracticeRunner({
       setIndex((i) => i + 1);
       setSelected(null);
       setRevealed(false);
-      setBookmarked([]);
       setQuestionStartedAt(Date.now());
     } else if (attemptId) {
       await finishPracticeSession(attemptId);
@@ -169,23 +114,6 @@ export default function PracticeRunner({
         </button>
       </div>
     );
-  }
-
-  if (!attemptId && fixedQuestionIds?.length) {
-    if (noFixedQuestions) {
-      return <p className="mt-6 text-sm text-slate-500">No matching questions to practice right now.</p>;
-    }
-    if (startError) {
-      return (
-        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">
-          {startError}{" "}
-          <button onClick={() => startFixed(fixedQuestionIds)} className="font-medium underline">
-            Retry
-          </button>
-        </div>
-      );
-    }
-    return <p className="mt-6 text-sm text-slate-500">Loading your mistakes…</p>;
   }
 
   if (!attemptId) {
@@ -291,22 +219,6 @@ export default function PracticeRunner({
                 {q.exam_tip}
               </p>
             )}
-            <div className="mt-1 flex flex-wrap items-center gap-2">
-              <span className="text-xs text-slate-400">Bookmark:</span>
-              {BOOKMARK_CATEGORIES.map((c) => (
-                <button
-                  key={c.value}
-                  onClick={() => handleToggleBookmark(c.value)}
-                  className={`rounded-full px-2.5 py-1 text-xs ${
-                    bookmarked.includes(c.value)
-                      ? "bg-slate-900 text-white"
-                      : "border border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 

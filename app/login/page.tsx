@@ -68,7 +68,7 @@ export default function LoginPage() {
         {mode === "sign_in" ? "Sign in" : "Create your account"}
       </h1>
       <p className="mt-1 text-sm text-slate-500">
-        Track your placement readiness across every target company.
+        Practice and take timed tests for your target companies.
       </p>
 
       <button
