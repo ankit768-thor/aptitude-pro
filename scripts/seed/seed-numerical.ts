@@ -1,4 +1,5 @@
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
+import { generateNumerical } from "./generate-numerical";
 
 const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
@@ -269,6 +270,8 @@ add({
   concept: "Data sufficiency — square area/side/perimeter relationships",
   exam_tip: "For a square, knowing any one of area, side, or perimeter lets you derive the other two — treat them as fully equivalent statements.",
 });
+
+Q.push(...generateNumerical());
 
 export async function seedNumerical() {
   await seedSubjectQuestions("numerical", Q);

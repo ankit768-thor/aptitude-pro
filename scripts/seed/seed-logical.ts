@@ -1,4 +1,5 @@
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
+import { generateLogical } from "./generate-logical";
 
 const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
@@ -336,6 +337,8 @@ add({
   concept: "Geometric (doubling) series",
   exam_tip: "Check ratios between consecutive terms first — a constant ratio signals a geometric series.",
 });
+
+Q.push(...generateLogical());
 
 export async function seedLogical() {
   await seedSubjectQuestions("logical", Q);
