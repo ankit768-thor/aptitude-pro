@@ -3,6 +3,11 @@ import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { SUBJECT_LABELS } from "@/lib/constants";
 
+export async function generateStaticParams() {
+  const { data } = await supabase.from("companies").select("slug");
+  return (data ?? []).map((c) => ({ slug: c.slug }));
+}
+
 export default async function CompanyDetailPage({
   params,
 }: {
