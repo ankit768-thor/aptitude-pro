@@ -1,6 +1,8 @@
+import { appendUnique } from "./genlib";
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
+import { generateVerbal } from "./generate-verbal";
 
-const Q: QuestionSeed[] = [];
+export const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
   Q.push(q);
 }
@@ -319,6 +321,8 @@ add({
   concept: "Paragraph sequencing (cause, effect, consequence, response)",
   exam_tip: "A sentence naming 'some companies' responding almost always comes last, after the problem is fully established.",
 });
+
+appendUnique(Q, generateVerbal());
 
 export async function seedVerbal() {
   await seedSubjectQuestions("verbal", Q);

@@ -1,4 +1,4 @@
-import type { Subject } from "@/lib/types/database";
+import type { CompanyCategory, Subject } from "@/lib/types/database";
 
 // The 4 user-selectable timed-test modes — excludes "topic_practice", which
 // is only ever created internally by the untimed Practice flow.
@@ -37,4 +37,11 @@ export const SUBJECT_TIME_TARGET_SECONDS: Record<Subject, number> = {
   di: 90,
   numerical: 60,
   critical_reasoning: 70,
+};
+
+export const CATEGORY_LABELS: Record<CompanyCategory, string> = {
+  consulting: "Consulting",
+  bfsi: "Finance / BFSI",
+  fmcg: "FMCG",
+  tech_ecommerce: "Tech / E-commerce",
 };

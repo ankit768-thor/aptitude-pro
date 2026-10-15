@@ -88,6 +88,12 @@ export default async function CompanyDetailPage({
         >
           Take timed mock
         </Link>
+        <Link
+          href={`/test/start?company=${company.slug}&mode=numbered`}
+          className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+          Numbered mocks
+        </Link>
       </div>
     </div>
   );

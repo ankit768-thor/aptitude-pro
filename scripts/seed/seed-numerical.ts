@@ -1,7 +1,8 @@
+import { appendUnique } from "./genlib";
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
 import { generateNumerical } from "./generate-numerical";
 
-const Q: QuestionSeed[] = [];
+export const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
   Q.push(q);
 }
@@ -109,13 +110,13 @@ add({
 });
 add({
   question_type: "Number Series",
-  question_text: "Find the next term: 2, 4, 8, 16, 32, ?",
-  options: opts("64", "60", "66", "62"),
+  question_text: "Find the next term: 5, 15, 45, 135, ?",
+  options: opts("405", "270", "395", "415"),
   correct_option_key: "A",
   difficulty: "easy",
-  explanation: "Each term doubles the previous one: 32×2=64.",
-  concept: "Geometric (doubling) series",
-  exam_tip: "A constant ratio of 2 between consecutive terms is the simplest and most common series pattern.",
+  explanation: "Each term triples the previous one: 135×3=405.",
+  concept: "Geometric (tripling) series",
+  exam_tip: "A constant ratio between consecutive terms is the simplest and most common series pattern.",
 });
 add({
   question_type: "Number Series",
@@ -271,7 +272,7 @@ add({
   exam_tip: "For a square, knowing any one of area, side, or perimeter lets you derive the other two — treat them as fully equivalent statements.",
 });
 
-Q.push(...generateNumerical());
+appendUnique(Q, generateNumerical());
 
 export async function seedNumerical() {
   await seedSubjectQuestions("numerical", Q);

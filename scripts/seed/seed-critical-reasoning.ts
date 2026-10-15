@@ -1,6 +1,6 @@
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
 
-const Q: QuestionSeed[] = [];
+export const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
   Q.push(q);
 }

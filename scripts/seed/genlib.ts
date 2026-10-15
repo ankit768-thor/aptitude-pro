@@ -65,3 +65,9 @@ export function generateUnique(count: number, templates: Array<(r: () => number)
   }
   return out;
 }
+
+// Appends generated questions, skipping any that duplicate a hand-authored one.
+export function appendUnique(target: QuestionSeed[], generated: QuestionSeed[]) {
+  const seen = new Set(target.map((q) => q.question_text));
+  target.push(...generated.filter((q) => !seen.has(q.question_text)));
+}

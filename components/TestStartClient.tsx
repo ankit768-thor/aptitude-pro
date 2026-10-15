@@ -15,7 +15,7 @@ export default function TestStartClient() {
   useEffect(() => {
     supabase
       .from("companies")
-      .select("id, name, slug, difficulty, company_sections(topic_subject, section_name, weight_pct, typical_question_count, typical_time_minutes)")
+      .select("id, name, slug, category, difficulty, company_sections(topic_subject, section_name, weight_pct, typical_question_count, typical_time_minutes)")
       .order("name")
       .then(({ data }) => setCompanies((data ?? []) as unknown as CompanyWithSections[]));
   }, []);

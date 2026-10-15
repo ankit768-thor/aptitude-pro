@@ -41,8 +41,11 @@ function tplTableRowTotal(r: () => number): QuestionSeed {
 
 function tplTableHighestInPeriod(r: () => number): QuestionSeed {
   const rowLabels = pickN(r, CITIES, 4);
-  const { text, rows } = buildTable(r, rowLabels);
   const qIdx = randInt(r, 0, QUARTERS.length - 1);
+  let table = buildTable(r, rowLabels);
+  // a tie for the highest value would make two options correct
+  while (table.rows.filter((row) => row[qIdx] === Math.max(...table.rows.map((x) => x[qIdx]))).length > 1) table = buildTable(r, rowLabels);
+  const { text, rows } = table;
   const colVals = rows.map((row) => row[qIdx]);
   const maxVal = Math.max(...colVals);
   const correctIdx = colVals.indexOf(maxVal);

@@ -3,16 +3,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { assembleTest, assembleTestFromIds, type AssembledTest } from "@/lib/testEngine";
 import { getModeConfig, sectionTargets, type CompanySectionLike } from "@/lib/algorithms/testAssembly";
-import { getDomainTestBank, getFullTestBank } from "@/lib/testBank";
+import { getCompanyTestBank, getDomainTestBank, getFullTestBank } from "@/lib/testBank";
 import { scoreAttempt, type ScoredAnswer, type ScoreResult } from "@/lib/algorithms/scoring";
 import { addHistoryEntry } from "@/lib/history";
-import { SUBJECT_LABELS, MODE_LABELS, MODE_DESCRIPTIONS, type TimedMode } from "@/lib/constants";
-import type { Difficulty, Subject } from "@/lib/types/database";
+import { CATEGORY_LABELS, SUBJECT_LABELS, MODE_LABELS, MODE_DESCRIPTIONS, type TimedMode } from "@/lib/constants";
+import type { CompanyCategory, Difficulty, Subject } from "@/lib/types/database";
 
 export interface CompanyWithSections {
   id: string;
   name: string;
   slug: string;
+  category: CompanyCategory;
   difficulty: Difficulty;
   company_sections: CompanySectionLike[];
 }
@@ -42,7 +43,8 @@ export default function TestFlow({
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [test, setTest] = useState<AssembledTest | null>(null);
-  const [picker, setPicker] = useState<"custom" | "numbered">("custom");
+  const [picker, setPicker] = useState<"custom" | "numbered">(initialMode === "numbered" ? "numbered" : "custom");
+  const [runCompanyName, setRunCompanyName] = useState<string | null>(null);
 
   const company = companies.find((c) => c.id === companyId);
   const sections = company?.company_sections;
@@ -61,6 +63,7 @@ export default function TestFlow({
     setStarting(true);
     try {
       const assembled = await assembleTest(mode, companyId || undefined, domainPickerEnabled && subject ? subject : undefined);
+      setRunCompanyName(company?.name ?? null);
       setTest(assembled);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not start the test");
@@ -89,7 +92,12 @@ export default function TestFlow({
 
         {picker === "numbered" ? (
           <NumberedTestPicker
-            onStart={setTest}
+            companies={companies}
+            initialBankKey={initialMode === "numbered" && initialCompanyId ? `c:${initialCompanyId}` : "full"}
+            onStart={(t, companyName) => {
+              setRunCompanyName(companyName);
+              setTest(t);
+            }}
             onError={setError}
             error={error}
           />
@@ -180,24 +188,25 @@ export default function TestFlow({
     );
   }
 
-  return <RunningTest test={test} companyName={company?.name ?? null} onRestart={() => setTest(null)} />;
+  return <RunningTest test={test} companyName={runCompanyName} onRestart={() => setTest(null)} />;
 }
 
-const BANK_OPTIONS: { key: Subject | "full"; label: string }[] = [
-  { key: "full", label: "Full Test (all domains)" },
-  ...(Object.keys(SUBJECT_LABELS) as Subject[]).map((s) => ({ key: s, label: SUBJECT_LABELS[s] })),
-];
-
+// bankKey: "full" | a Subject | "c:<companyId>"
 function NumberedTestPicker({
+  companies,
+  initialBankKey,
   onStart,
   onError,
   error,
 }: {
-  onStart: (test: AssembledTest) => void;
+  companies: CompanyWithSections[];
+  initialBankKey: string;
+  onStart: (test: AssembledTest, companyName: string | null) => void;
   onError: (msg: string | null) => void;
   error: string | null;
 }) {
-  const [bankKey, setBankKey] = useState<Subject | "full">("full");
+  const [bankKey, setBankKey] = useState(initialBankKey);
+  const bankCompany = bankKey.startsWith("c:") ? companies.find((c) => `c:${c.id}` === bankKey) : undefined;
   const [bank, setBank] = useState<string[][] | null>(null);
   const [loading, setLoading] = useState(false);
   const [starting, setStarting] = useState<number | null>(null);
@@ -209,7 +218,12 @@ function NumberedTestPicker({
       setBank(null);
       setLoading(true);
       onError(null);
-      const fetchBank = bankKey === "full" ? getFullTestBank() : getDomainTestBank(bankKey);
+      const fetchBank =
+        bankKey === "full"
+          ? getFullTestBank()
+          : bankCompany
+            ? getCompanyTestBank(bankCompany.id, bankCompany.company_sections)
+            : getDomainTestBank(bankKey as Subject);
       fetchBank
         .then((chunks) => {
           if (!cancelled) setBank(chunks);
@@ -229,9 +243,11 @@ function NumberedTestPicker({
     setStarting(chunkIndex);
     onError(null);
     try {
-      const title = `${bankKey === "full" ? "Full" : SUBJECT_LABELS[bankKey]} Test ${chunkIndex + 1}`;
+      const title = bankCompany
+        ? `${bankCompany.name} Mock ${chunkIndex + 1}`
+        : `${bankKey === "full" ? "Full" : SUBJECT_LABELS[bankKey as Subject]} Test ${chunkIndex + 1}`;
       const assembled = await assembleTestFromIds(bank[chunkIndex], title);
-      onStart(assembled);
+      onStart(assembled, bankCompany?.name ?? null);
     } catch (e) {
       onError(e instanceof Error ? e.message : "Could not start the test");
     } finally {
@@ -242,16 +258,30 @@ function NumberedTestPicker({
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1 text-sm text-slate-600">
-        Domain
+        Domain or company
         <select
           value={bankKey}
-          onChange={(e) => setBankKey(e.target.value as Subject | "full")}
+          onChange={(e) => setBankKey(e.target.value)}
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900"
         >
-          {BANK_OPTIONS.map((o) => (
-            <option key={o.key} value={o.key}>
-              {o.label}
-            </option>
+          <optgroup label="By domain">
+            <option value="full">Full Test (all domains)</option>
+            {(Object.keys(SUBJECT_LABELS) as Subject[]).map((s) => (
+              <option key={s} value={s}>
+                {SUBJECT_LABELS[s]}
+              </option>
+            ))}
+          </optgroup>
+          {(Object.keys(CATEGORY_LABELS) as CompanyCategory[]).map((cat) => (
+            <optgroup key={cat} label={`Company mocks — ${CATEGORY_LABELS[cat]}`}>
+              {companies
+                .filter((c) => c.category === cat)
+                .map((c) => (
+                  <option key={c.id} value={`c:${c.id}`}>
+                    {c.name}
+                  </option>
+                ))}
+            </optgroup>
           ))}
         </select>
       </label>
@@ -262,7 +292,10 @@ function NumberedTestPicker({
       )}
       {!loading && bank && bank.length > 0 && (
         <>
-          <p className="text-xs text-slate-500">{bank.length} mutually-exclusive tests available — each question appears in exactly one.</p>
+          <p className="text-xs text-slate-500">
+            {bank.length} mutually-exclusive tests available — each question appears in exactly one.
+            {bankCompany && ` Each mock is ${bank[0].length} questions following ${bankCompany.name}'s estimated section weights.`}
+          </p>
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
             {bank.map((_, i) => (
               <button

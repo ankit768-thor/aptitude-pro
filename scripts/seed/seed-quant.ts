@@ -1,7 +1,8 @@
+import { appendUnique } from "./genlib";
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
 import { generateQuant } from "./generate-quant";
 
-const Q: QuestionSeed[] = [];
+export const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
   Q.push(q);
 }
@@ -244,7 +245,7 @@ add({
   exam_tip: "Doubling/tripling SI questions reduce to a one-line formula — don't set up the full equation from scratch.",
 });
 
-Q.push(...generateQuant());
+appendUnique(Q, generateQuant());
 
 export async function seedQuant() {
   await seedSubjectQuestions("quant", Q);

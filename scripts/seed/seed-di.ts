@@ -1,7 +1,8 @@
+import { appendUnique } from "./genlib";
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
 import { generateDi } from "./generate-di";
 
-const Q: QuestionSeed[] = [];
+export const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
   Q.push(q);
 }
@@ -234,7 +235,7 @@ add({
   exam_tip: "The department with the highest average salary isn't necessarily the one with the highest total bill — always compute totals before comparing.",
 });
 
-Q.push(...generateDi());
+appendUnique(Q, generateDi());
 
 export async function seedDi() {
   await seedSubjectQuestions("di", Q);

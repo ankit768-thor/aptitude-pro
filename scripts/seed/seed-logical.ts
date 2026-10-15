@@ -1,7 +1,8 @@
+import { appendUnique } from "./genlib";
 import { seedSubjectQuestions, opts, type QuestionSeed } from "./lib";
 import { generateLogical } from "./generate-logical";
 
-const Q: QuestionSeed[] = [];
+export const Q: QuestionSeed[] = [];
 function add(q: QuestionSeed) {
   Q.push(q);
 }
@@ -338,7 +339,7 @@ add({
   exam_tip: "Check ratios between consecutive terms first — a constant ratio signals a geometric series.",
 });
 
-Q.push(...generateLogical());
+appendUnique(Q, generateLogical());
 
 export async function seedLogical() {
   await seedSubjectQuestions("logical", Q);

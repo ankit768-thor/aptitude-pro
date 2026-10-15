@@ -6,7 +6,7 @@ function fmtPct(v: number): string {
   if (rounded === 0) return "No change";
   return `${Math.abs(rounded)}% ${rounded > 0 ? "increase" : "decrease"}`;
 }
-const money = (n: number) => `₹${n}`;
+const money = (n: number) => `₹${Number.isInteger(n) ? n : n.toFixed(2)}`;
 
 // ---- Percentages ----
 function tplPercentSuccessive(r: () => number): QuestionSeed {
@@ -21,7 +21,7 @@ function tplPercentSuccessive(r: () => number): QuestionSeed {
     options,
     correct_option_key,
     difficulty: pickDifficulty(r),
-    explanation: `Net % change = x + y' + xy'/100 where y' = -${y}. Net = ${x} - ${y} + (${x} × -${y})/100 = ${correct}%.`,
+    explanation: `Net % change = x + y' + xy'/100 where y' = -${y}. Net = ${x} - ${y} + (${x} × -${y})/100 = ${correct}%, i.e. ${fmtPct(correct)}.`,
     shortcut: "For successive % changes a and b, net change = a + b + ab/100 (use a negative value for a decrease).",
     concept: "Successive percentage change",
     exam_tip: "Never just subtract the two percentages — the cross term ab/100 always matters.",
@@ -29,7 +29,7 @@ function tplPercentSuccessive(r: () => number): QuestionSeed {
 }
 
 function tplPercentOfTotal(r: () => number): QuestionSeed {
-  const total = randInt(r, 20, 80) * 10;
+  const total = randInt(r, 10, 40) * 20;
   const pct = pick(r, [10, 15, 20, 25, 30, 40, 60, 75]);
   const correct = Math.round((total * pct) / 100);
   const { options, correct_option_key } = numericOptions(r, correct, [total - correct, correct + Math.round(total * 0.1), Math.round(total * 0.5)]);
@@ -46,7 +46,7 @@ function tplPercentOfTotal(r: () => number): QuestionSeed {
 }
 
 function tplPercentElection(r: () => number): QuestionSeed {
-  const totalVotes = randInt(r, 40, 120) * 100;
+  const totalVotes = randInt(r, 10, 30) * 400;
   const invalidPct = pick(r, [10, 15, 20, 25]);
   const winPct = pick(r, [55, 60, 65, 70]);
   const validVotes = Math.round((totalVotes * (100 - invalidPct)) / 100);
@@ -75,7 +75,7 @@ function tplProfitMarkupDiscount(r: () => number): QuestionSeed {
     options,
     correct_option_key,
     difficulty: pickDifficulty(r),
-    explanation: `CP = ${100 - discount}% of MP, SP = MP. Profit% = discount/(100−discount) × 100 = ${discount}/${100 - discount} × 100 = ${correct}%.`,
+    explanation: `CP = ${100 - discount}% of MP, SP = MP. Profit% = discount/(100−discount) × 100 = ${discount}/${100 - discount} × 100 = ${correct}%, i.e. ${fmtPct(correct)}.`,
     shortcut: "A discount of d% followed by selling at full marked price gives profit% = d/(100−d) × 100.",
     concept: "Discount converted to profit percentage",
     exam_tip: "Don't confuse the discount percentage with the resulting profit percentage — they're never equal.",
@@ -83,7 +83,7 @@ function tplProfitMarkupDiscount(r: () => number): QuestionSeed {
 }
 
 function tplProfitCP(r: () => number): QuestionSeed {
-  const cp = randInt(r, 20, 90) * 10;
+  const cp = randInt(r, 10, 45) * 20;
   const profitPct = pick(r, [10, 15, 20, 25, 30, 40]);
   const sp = Math.round(cp * (1 + profitPct / 100));
   const { options, correct_option_key } = numericOptions(r, sp, [cp, sp - cp, Math.round(cp * (1 - profitPct / 100))], money);
@@ -100,7 +100,7 @@ function tplProfitCP(r: () => number): QuestionSeed {
 }
 
 function tplLossPercent(r: () => number): QuestionSeed {
-  const cp = randInt(r, 20, 90) * 10;
+  const cp = randInt(r, 10, 45) * 20;
   const lossPct = pick(r, [5, 10, 15, 20, 25]);
   const sp = Math.round(cp * (1 - lossPct / 100));
   const { options, correct_option_key } = numericOptions(r, sp, [cp, cp - sp, Math.round(cp * (1 + lossPct / 100))], money);
@@ -418,7 +418,7 @@ function tplCompoundInterest(r: () => number): QuestionSeed {
   const p = randInt(r, 10, 40) * 100;
   const rate = pick(r, [5, 10, 20]);
   const time = pick(r, [2, 3]);
-  const ci = Math.round(p * Math.pow(1 + rate / 100, time) - p);
+  const ci = Math.round((p * Math.pow(1 + rate / 100, time) - p) * 100) / 100;
   const si = Math.round((p * rate * time) / 100);
   const { options, correct_option_key } = numericOptions(r, ci, [si, p, ci - (ci - si)], money);
   return {
@@ -427,7 +427,7 @@ function tplCompoundInterest(r: () => number): QuestionSeed {
     options,
     correct_option_key,
     difficulty: "medium",
-    explanation: `Amount = P(1+R/100)^T = ${p}×(1+${rate}/100)^${time} = ${Math.round(p * Math.pow(1 + rate / 100, time))}. CI = Amount − P = ${ci}.`,
+    explanation: `Amount = P(1+R/100)^T = ${p}×(1+${rate}/100)^${time} = ${Math.round(p * Math.pow(1 + rate / 100, time) * 100) / 100}. CI = Amount − P = ${ci}.`,
     shortcut: "For 2 years, CI = SI + P×(R/100)² — a quick check against the full formula.",
     concept: "Compound interest formula",
     exam_tip: "CI always exceeds SI (for the same P, R, T > 1 year) — a computed CI ≤ SI signals an arithmetic error.",

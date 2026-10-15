@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { CompanyCategory, Difficulty } from "@/lib/types/database";
+import { CATEGORY_LABELS } from "@/lib/constants";
 
 export interface CompanyListItem {
   id: string;
@@ -12,13 +13,6 @@ export interface CompanyListItem {
   difficulty: Difficulty;
   assessment_type: string;
 }
-
-const CATEGORY_LABELS: Record<CompanyCategory, string> = {
-  consulting: "Consulting",
-  bfsi: "Finance / BFSI",
-  fmcg: "FMCG",
-  tech_ecommerce: "Tech / E-commerce",
-};
 
 export default function CompanyGrid({ companies }: { companies: CompanyListItem[] }) {
   const [category, setCategory] = useState<CompanyCategory | "all">("all");

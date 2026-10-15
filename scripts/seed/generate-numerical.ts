@@ -113,7 +113,7 @@ function tplDsOneAloneSufficient(r: () => number): QuestionSeed {
   const first = r() < 0.5;
   const suffStmt = `x = ${x}`;
   const trueDivisors = [2, 3, 5].filter((d) => x % d === 0);
-  const weakOptions = [`x is ${x % 2 === 0 ? "an even" : "an odd"} number`, `x is greater than ${x - randInt(r, 5, 15)}`];
+  const weakOptions = [`x is ${x % 2 === 0 ? "an even" : "an odd"} number`, `x is greater than ${x - randInt(r, 2, 9)}`];
   if (trueDivisors.length > 0) weakOptions.push(`x is a multiple of ${pick(r, trueDivisors)}`);
   const weakStmt = pick(r, weakOptions);
   const stmtI = first ? suffStmt : weakStmt;

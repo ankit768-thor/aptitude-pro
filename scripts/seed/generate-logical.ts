@@ -182,12 +182,13 @@ function tplLetterSeriesSkip(r: () => number): QuestionSeed {
 }
 
 function tplLetterSeriesDouble(r: () => number): QuestionSeed {
-  const pairs = ["AZ", "BY", "CX", "DW", "EV", "FU"];
-  const start = randInt(r, 0, pairs.length - 1);
-  const seq = [0, 1, 2].map((i) => pairs[(start + i) % pairs.length]);
-  const next = pairs[(start + 3) % pairs.length];
-  const wrong1 = pairs[(start + 4) % pairs.length];
-  const wrong2 = pairs[(start + 2) % pairs.length];
+  // AZ, BY, CX, ... MN — no wrap-around, so the pattern never breaks mid-series
+  const pairs = Array.from({ length: 13 }, (_, i) => ALPHABET[i] + ALPHABET[25 - i]);
+  const start = randInt(r, 0, pairs.length - 5);
+  const seq = [0, 1, 2].map((i) => pairs[start + i]);
+  const next = pairs[start + 3];
+  const wrong1 = pairs[start + 4];
+  const wrong2 = pairs[start + 2];
   const wrong3 = reverseWord(next);
   const { options, correct_option_key } = uniqueTextOptions(next, [wrong1, wrong2, wrong3]);
   return {
