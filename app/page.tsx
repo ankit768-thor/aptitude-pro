@@ -12,7 +12,7 @@ export default async function Home() {
     <div>
       <section className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-          Crack Your MBA Placement Aptitude Test
+          Crack Your Placement Aptitude Test
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-lg text-slate-600">
           Practice company-specific aptitude tests, take timed assessments and identify exactly

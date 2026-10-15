@@ -1,10 +1,10 @@
 # AptitudePro
 
-An aptitude-test prep platform for MBA students preparing for company recruitment and campus
+An aptitude-test prep platform for students preparing for company recruitment and campus
 placements — pick a target company, see its estimated assessment pattern, practice relevant
 topics, and take timed tests (full-length or per-domain) with a per-test result breakdown.
 
-This is NOT an MBA-entrance-exam (CAT/GMAT) prep tool.
+This is NOT an entrance-exam (CAT/GMAT) prep tool.
 
 No accounts, no sign-in — same as this user's other local projects (sql-mastery, pm-mastery).
 Open it and start practicing; progress/history is saved in your browser only.

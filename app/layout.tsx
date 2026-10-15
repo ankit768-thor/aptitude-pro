@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AptitudePro — MBA Placement Aptitude Prep",
+  title: "AptitudePro — Placement Aptitude Prep",
   description:
-    "Practice company-specific aptitude tests, take timed assessments, and identify exactly where you need to improve before your MBA placement.",
+    "Practice company-specific aptitude tests, take timed assessments, and identify exactly where you need to improve before your placement.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
